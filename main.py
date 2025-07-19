@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 ZAPWORK_API_URL = "https://app.zapwork.com.br/painel/notificacoes"
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY")  # Definida como variável de ambiente no Render
 
 @app.route("/", methods=["GET"])
 def home():
@@ -19,22 +19,27 @@ def receber_webhook():
         telefone = data.get("telefone")
         mensagem = data.get("mensagem")
 
+        if not all([telefone, mensagem]):
+            return jsonify({"error": "Campos obrigatórios ausentes."}), 400
+
+        headers = {
+            "Authorization": API_KEY,
+            "Content-Type": "application/json"
+        }
         payload = {
-            "nome": nome,
             "telefone": telefone,
-            "mensagem": mensagem,
-            "apiKey": API_KEY
+            "mensagem": mensagem
         }
 
-        response = requests.post(ZAPWORK_API_URL, json=payload)
+        response = requests.post(ZAPWORK_API_URL, json=payload, headers=headers)
 
         if response.status_code == 200:
-            return jsonify({"status": "sucesso", "zapwork": response.json()})
+            return jsonify({"status": "sucesso", "resposta": response.json()})
         else:
-            return jsonify({"status": "erro", "detalhes": response.text}), response.status_code
+            return jsonify({"erro": "Falha ao enviar para Zapwork", "resposta": response.text}), 500
 
     except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+        return jsonify({"erro": "Erro interno", "mensagem": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
