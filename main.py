@@ -20,25 +20,20 @@ def receber_webhook():
         mensagem = data.get("mensagem")
 
         payload = {
-            "nome": nome,
-            "telefone": telefone,
-            "mensagem": mensagem
+            "numero": telefone,
+            "mensagem": f"👋 Olá *{nome}*!\n{mensagem}"
         }
 
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": API_KEY
+            "Authorization": API_KEY,
+            "Content-Type": "application/json"
         }
 
         response = requests.post(ZAPWORK_API_URL, json=payload, headers=headers)
+        return jsonify({"status": "enviado", "zapwork": response.json()}), response.status_code
 
-        return jsonify({
-            "status": "ok",
-            "zapwork_status": response.status_code,
-            "zapwork_response": response.json()
-        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=10000)
