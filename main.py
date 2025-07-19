@@ -1,16 +1,26 @@
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, Request, Header
+from fastapi.responses import JSONResponse
+import os
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route("/", methods=["POST"])
-def webhook():
-    data = request.json
-    name = data.get("name")
-    whatsapp = data.get("whatsapp")
+API_KEY = os.getenv("API_KEY")
 
-    print(f"📩 Novo agendamento recebido: {name} - WhatsApp: {whatsapp}")
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Servidor ZapWork webhook ativo."}
 
-    return jsonify({"status": "recebido", "name": name, "whatsapp": whatsapp}), 200
+@app.post("/webhook")
+async def receive_webhook(request: Request, authorization: str = Header(None)):
+    if authorization != API_KEY:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    try:
+        data = await request.json()
+        # Aqui você pode processar os dados recebidos do ZapWork
+        print("📩 Webhook recebido:", data)
+
+        return {"status": "success", "message": "Webhook processado"}
+    except Exception as e:
+        print("❌ Erro ao processar webhook:", e)
+        return JSONResponse(status_code=400, content={"error": "Invalid request"})
